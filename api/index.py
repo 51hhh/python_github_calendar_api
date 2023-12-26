@@ -6,14 +6,24 @@ import json
 
 def list_split(items, n):
     return [items[i:i + n] for i in range(0, len(items), n)]
+
+# 安全转换字符串到整数，遇到无法转换的字符串返回0
+def safe_int_conversion(s):
+    try:
+        return int(s)
+    except ValueError:
+        return 0
+
 def getdata(name):
     gitpage = requests.get("https://github.com/" + name)
     data = gitpage.text
     datadatereg = re.compile(r'data-date="(.*?)" id="contribution-day-component')
-    datacountreg = re.compile(r'<span class="sr-only">(.*?) contribution')
+    datacountreg = re.compile(r'<tool-tip [^>]*>(\d+|No) contributions(?= on [^<]*</tool-tip>)')
     datadate = datadatereg.findall(data)
     datacount = datacountreg.findall(data)
-    datacount = list(map(int, [0 if i == "No" else i for i in datacount]))
+    
+    # 使用safe_int_conversion函数转换datacount中的每个项
+    datacount = [safe_int_conversion(i) for i in datacount]
 
     # 将datadate和datacount按照字典序排序
     sorted_data = sorted(zip(datadate, datacount))
@@ -30,6 +40,7 @@ def getdata(name):
         "contributions": datalistsplit
     }
     return returndata
+
 class handler(BaseHTTPRequestHandler):
     def do_GET(self):
         path = self.path
